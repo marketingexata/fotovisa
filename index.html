@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pas Foto ke A4 – Cetak Mudah</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- ============ SECTION 1: STYLE ============ -->
+<style>
+:root{--bg:#f3f7ff;--card:#fff;--ink:#1c2540;--mute:#66739a;--pri:#2563eb;--pri2:#e6eeff;--ok:#16a34a;--bad:#dc2626;--line:#dfe7fb;--r:18px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:linear-gradient(180deg,#e9f1ff,var(--bg) 280px);color:var(--ink);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{max-width:1100px;margin:0 auto;padding:22px 16px 6px;display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+h1{font-size:clamp(22px,4.5vw,32px);margin:0 0 4px;letter-spacing:-.5px}
+header p{margin:0;color:var(--mute);font-size:15px}
+.badge{font-size:13px;background:#fff;border:1px solid var(--line);color:var(--ok);padding:7px 12px;border-radius:99px;white-space:nowrap}
+.grid{max-width:1100px;margin:0 auto;padding:12px 16px 40px;display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:900px){.grid{grid-template-columns:1fr 1fr;align-items:start}.sticky{position:sticky;top:12px}}
+.col{display:grid;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:0 6px 24px rgba(37,99,235,.07)}
+.step{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.num{width:30px;height:30px;border-radius:50%;background:var(--pri);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.step h2{font-size:18px;margin:0}
+.hint{color:var(--mute);font-size:14px;margin:0 0 12px;line-height:1.45}
+button,.btn{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:12px 16px;font-weight:600;transition:.15s}
+.primary{background:var(--pri);color:#fff;box-shadow:0 6px 16px rgba(37,99,235,.3)}
+.primary:hover{transform:translateY(-1px);filter:brightness(1.06)}
+.soft{background:var(--pri2);color:var(--pri)}
+.soft:hover{filter:brightness(.97)}
+.big{width:100%;padding:15px;font-size:16px}
+.chip{background:#f1f4fc;color:var(--ink);padding:9px 13px;border-radius:99px;font-size:14px;border:1.5px solid transparent}
+.chip.on{background:var(--pri2);color:var(--pri);border-color:var(--pri)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.drop{display:block;text-align:center;border:2px dashed #b9c9f5;border-radius:14px;padding:22px 12px;background:#f8faff}
+.drop b{display:block;font-size:16px;color:var(--pri)}
+.drop span{font-size:13px;color:var(--mute)}
+input[type=file]{display:none}
+.stage{display:grid;place-items:center;background:#eef2fb;border-radius:14px;padding:14px;margin:6px 0 12px}
+#crop{width:min(100%,300px);height:auto;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.18);touch-action:none;cursor:grab;background:#fff}
+#crop:active{cursor:grabbing}
+label.f{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:14px;color:var(--mute)}
+label.f b{min-width:64px;color:var(--ink)}
+input[type=range]{flex:1;accent-color:var(--pri);height:28px}
+input[type=number],input[type=text]{font:inherit;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;width:100%}
+#sizes{display:none;margin:10px 0;padding:12px;background:#f8faff;border-radius:12px}
+#sizes.open{display:block}
+.cust{display:flex;gap:8px;align-items:center;margin-top:10px}
+.cust input{width:80px}
+.stepper{display:flex;align-items:center;gap:12px}
+.stepper button{width:44px;height:44px;padding:0;font-size:22px}
+.stepper output{font-size:26px;font-weight:700;min-width:36px;text-align:center}
+.a4wrap{background:#dfe6f7;border-radius:14px;padding:12px;margin:8px 0 12px}
+#a4{width:100%;height:auto;display:block;background:#fff;box-shadow:0 6px 22px rgba(0,0,0,.2)}
+#info{font-size:14px;color:var(--mute);margin:0 0 12px}
+#info.warn{color:var(--bad);font-weight:600}
+.modal{position:fixed;inset:0;background:rgba(20,30,60,.5);display:none;place-items:center;padding:16px;z-index:9}
+.modal.open{display:grid}
+.box{background:#fff;border-radius:18px;padding:22px;width:min(420px,100%)}
+.box h3{margin:0 0 6px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1c2540;color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:10;max-width:90%}
+.toast.show{opacity:1}
+.link{background:none;color:var(--mute);padding:6px;font-weight:500;text-decoration:underline;font-size:13px}
+</style>
+</head>
+<body>
+<!-- ============ SECTION 2: HTML ============ -->
+<header>
+  <div>
+    <h1>📸 Pas Foto ke A4</h1>
+    <p>Ikuti 4 langkah berikut. Hasilnya berupa PDF siap cetak.</p>
+  </div>
+  <div class="badge" id="saved">✓ Tersimpan otomatis</div>
+</header>
+
+<main class="grid">
+  <div class="col">
+    <!-- Langkah 1 -->
+    <section class="card">
+      <div class="step"><div class="num">1</div><h2>Unggah foto</h2></div>
+      <p class="hint">Pilih foto wajah dari galeri atau kamera. Foto otomatis dipotong ke ukuran 3,5 × 4,5 cm.</p>
+      <label class="drop"><b>＋ Pilih foto</b><span>JPG, PNG, atau HEIC yang didukung perangkat</span>
+        <input type="file" id="file" accept="image/*"></label>
+    </section>
+
+    <!-- Langkah 2 -->
+    <section class="card">
+      <div class="step"><div class="num">2</div><h2>Atur potongan foto</h2></div>
+      <p class="hint">Geser foto dengan jari atau mouse sampai wajah pas di tengah. Gunakan penggeser untuk memperbesar.</p>
+      <div class="row" style="justify-content:space-between">
+        <span class="chip on" id="sizeLbl">3.5 × 4.5 cm</span>
+        <button class="soft" id="btnSizes">Ukuran lain ▾</button>
+      </div>
+      <div id="sizes">
+        <div class="row" id="presetRow"></div>
+        <div class="cust"><span style="font-size:14px">Kustom:</span>
+          <input type="number" id="cw" min="1" max="12" step="0.1" placeholder="Lebar">
+          <span>×</span>
+          <input type="number" id="ch" min="1" max="12" step="0.1" placeholder="Tinggi">
+          <button class="soft" id="btnCust">OK</button>
+        </div>
+      </div>
+      <div class="stage"><canvas id="crop" width="413" height="531"></canvas></div>
+      <label class="f"><b>🔍 Zoom</b><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"></label>
+      <p class="hint" style="margin:12px 0 6px"><b style="color:var(--ink)">Warna latar belakang</b> (opsional, paling bagus untuk latar polos)</p>
+      <div class="row" id="bgRow">
+        <button class="chip on" data-bg="none">Asli</button>
+        <button class="chip" data-bg="red">🟥 Merah</button>
+        <button class="chip" data-bg="blue">🟦 Biru</button>
+      </div>
+      <label class="f" id="tolRow" style="display:none"><b>Kepekaan</b><input type="range" id="tol" min="10" max="90" value="40"></label>
+      <button class="link" id="btnPos">↺ Kembalikan posisi &amp; zoom</button>
+    </section>
+
+    <!-- Langkah 3 -->
+    <section class="card">
+      <div class="step"><div class="num">3</div><h2>Jumlah &amp; jarak foto</h2></div>
+      <p class="hint">Pilih berapa lembar foto yang dicetak di kertas A4 (1–20) dan jarak antar foto.</p>
+      <div class="stepper">
+        <button class="soft" id="minus">−</button><output id="nOut">5</output><button class="soft" id="plus">+</button>
+        <span style="color:var(--mute);font-size:14px">foto</span>
+      </div>
+      <label class="f"><b>Jarak</b><input type="range" id="gap" min="0" max="10" step="0.5" value="1"><span id="gapOut" style="min-width:50px">1 mm</span></label>
+      <label class="f"><input type="checkbox" id="guides" checked style="width:20px;height:20px"> Tampilkan garis panduan potong</label>
+    </section>
+  </div>
+
+  <!-- Langkah 4 -->
+  <div class="col sticky">
+    <section class="card">
+      <div class="step"><div class="num">4</div><h2>Cek &amp; unduh PDF</h2></div>
+      <p class="hint">Inilah tampilan kertas A4 Anda. Jika sudah sesuai, tekan tombol unduh.</p>
+      <div class="a4wrap"><canvas id="a4" width="630" height="891"></canvas></div>
+      <p id="info"></p>
+      <button class="primary big" id="btnDl">⬇ Unduh PDF A4</button>
+      <div style="text-align:center;margin-top:8px"><button class="link" id="btnReset">Mulai dari awal</button></div>
+    </section>
+  </div>
+</main>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <h3>Beri nama file</h3>
+    <p class="hint">Nama ini akan dipakai untuk file PDF Anda.</p>
+    <input type="text" id="fname" placeholder="contoh: pas-foto-budi" maxlength="60">
+    <div class="row" style="margin-top:14px;justify-content:flex-end">
+      <button class="soft" id="mCancel">Batal</button>
+      <button class="primary" id="mOk">Unduh sekarang</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- ============ SECTION 3: JAVASCRIPT ============ -->
+<script>
+const $ = i => document.getElementById(i);
+const DEF = {img:null,w:35,h:45,zoom:1,ox:0,oy:0,n:5,gap:1,guides:true,bg:'none',tol:40};
+const S = {...DEF};
+let IMG = null, saveT;
+const cv = $('crop'), cx = cv.getContext('2d', {willReadFrequently:true});
+const ac = $('a4'), ax = ac.getContext('2d');
+const BG = {red:[204,31,42], blue:[30,91,191]};
+const PRESETS = [[3.5,4.5],[3,4],[4,3],[2,3],[2.5,3],[3,3],[4,6],[5,5]];
+const A4 = {W:210,H:297,M:10};
+
+/* ---------- Penyimpanan (IndexedDB) ---------- */
+const openDB = () => new Promise((res,rej)=>{
+  const r = indexedDB.open('pasfoto-a4',1);
+  r.onupgradeneeded = () => r.result.createObjectStore('k');
+  r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+});
+async function dbSet(v){ try{ const d = await openDB(); d.transaction('k','readwrite').objectStore('k').put(v,'s'); $('saved').textContent='✓ Tersimpan otomatis'; }catch(e){ $('saved').textContent='⚠ Penyimpanan tidak tersedia'; } }
+async function dbGet(){ try{ const d = await openDB(); return await new Promise(r=>{ const q=d.transaction('k').objectStore('k').get('s'); q.onsuccess=()=>r(q.result); q.onerror=()=>r(null); }); }catch(e){ return null; } }
+const save = () => { clearTimeout(saveT); $('saved').textContent='Menyimpan…'; saveT = setTimeout(()=>dbSet({...S}), 300); };
+
+/* ---------- Utilitas ---------- */
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+const cm = v => +(v/10).toFixed(2);
+
+/* ---------- Render crop ---------- */
+function drawCrop(){
+  const W = Math.round(S.w/25.4*300), H = Math.round(S.h/25.4*300);
+  if(cv.width!==W || cv.height!==H){ cv.width=W; cv.height=H; }
+  cx.fillStyle = '#e8eefc'; cx.fillRect(0,0,W,H);
+  if(!IMG){
+    cx.fillStyle = '#8aa0d6'; cx.font = `600 ${W/9}px system-ui`; cx.textAlign='center'; cx.textBaseline='middle';
+    cx.fillText('Foto', W/2, H/2); return;
+  }
+  const s = Math.max(W/IMG.width, H/IMG.height)*S.zoom, dw = IMG.width*s, dh = IMG.height*s;
+  const mx = (dw-W)/2, my = (dh-H)/2;
+  const px = Math.max(-mx, Math.min(mx, S.ox*W)), py = Math.max(-my, Math.min(my, S.oy*H));
+  S.ox = px/W; S.oy = py/H;
+  cx.drawImage(IMG, (W-dw)/2+px, (H-dh)/2+py, dw, dh);
+  if(S.bg!=='none') swapBg(W,H);
+}
+function swapBg(W,H){
+  const d = cx.getImageData(0,0,W,H), p = d.data;
+  const rows = Math.max(4, Math.round(H*.03)); let r=0,g=0,b=0,c=0;
+  for(let y=0;y<rows;y++) for(let x=0;x<W;x++){ const i=(y*W+x)*4; r+=p[i]; g+=p[i+1]; b+=p[i+2]; c++; }
+  r/=c; g/=c; b/=c;
+  const t = BG[S.bg], thr = S.tol*3;
+  for(let i=0;i<p.length;i+=4){
+    const dist = Math.hypot(p[i]-r, p[i+1]-g, p[i+2]-b);
+    if(dist<thr){
+      const a = dist<thr*.6 ? 1 : 1-(dist-thr*.6)/(thr*.4);
+      p[i]+=(t[0]-p[i])*a; p[i+1]+=(t[1]-p[i+1])*a; p[i+2]+=(t[2]-p[i+2])*a;
+    }
+  }
+  cx.putImageData(d,0,0);
+}
+
+/* ---------- Layout A4 ---------- */
+function layout(){
+  const {W,H,M} = A4, w=S.w, h=S.h, g=S.gap;
+  const per = Math.max(1, Math.floor((W-2*M+g)/(w+g)));
+  const pos = [];
+  for(let i=0;i<S.n;i++){
+    const r = Math.floor(i/per), c = i%per, inRow = Math.min(per, S.n-r*per);
+    const rowW = inRow*w+(inRow-1)*g;
+    pos.push({x:(W-rowW)/2+c*(w+g), y:M+r*(h+g)});
+  }
+  const over = pos.some(p=>p.y+h > H-M+.01) || w > W-2*M;
+  return {pos, per, over};
+}
+function drawA4(){
+  const k = ac.width/A4.W, L = layout();
+  ax.fillStyle='#fff'; ax.fillRect(0,0,ac.width,ac.height);
+  L.pos.forEach(p=>{
+    ax.drawImage(cv, p.x*k, p.y*k, S.w*k, S.h*k);
+    if(S.guides){ ax.strokeStyle='#8f9bb8'; ax.lineWidth=.6; ax.strokeRect(p.x*k, p.y*k, S.w*k, S.h*k); }
+  });
+  const info = $('info');
+  info.className = L.over ? 'warn' : '';
+  info.textContent = L.over
+    ? '⚠ Sebagian foto keluar dari kertas A4. Kurangi jumlah atau jarak.'
+    : `${S.n} foto • ${cm(S.w)} × ${cm(S.h)} cm • ${L.per} foto per baris • jarak ${S.gap} mm`;
+}
+
+/* ---------- Sinkron UI ---------- */
+function syncUI(){
+  $('sizeLbl').textContent = `${cm(S.w)} × ${cm(S.h)} cm`;
+  $('zoom').value = S.zoom; $('tol').value = S.tol;
+  $('nOut').textContent = S.n; $('gap').value = S.gap; $('gapOut').textContent = S.gap+' mm';
+  $('guides').checked = S.guides;
+  $('tolRow').style.display = S.bg==='none' ? 'none' : 'flex';
+  document.querySelectorAll('#bgRow .chip').forEach(b=>b.classList.toggle('on', b.dataset.bg===S.bg));
+  document.querySelectorAll('#presetRow .chip').forEach(b=>b.classList.toggle('on', +b.dataset.w===S.w && +b.dataset.h===S.h));
+}
+function render(persist=true){ drawCrop(); drawA4(); syncUI(); if(persist) save(); }
+
+/* ---------- Upload ---------- */
+function loadImg(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+$('file').addEventListener('change', async e=>{
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const raw = await loadImg(URL.createObjectURL(f));
+    const sc = Math.min(1, 1800/Math.max(raw.width, raw.height));
+    const c = document.createElement('canvas'); c.width = Math.round(raw.width*sc); c.height = Math.round(raw.height*sc);
+    c.getContext('2d').drawImage(raw,0,0,c.width,c.height);
+    S.img = c.toDataURL('image/jpeg',.92); IMG = await loadImg(S.img);
+    S.zoom=1; S.ox=0; S.oy=0; render(); toast('Foto berhasil dimuat ✓');
+  }catch(err){ toast('Foto tidak bisa dibuka. Coba format JPG atau PNG.'); }
+  e.target.value='';
+});
+
+/* ---------- Geser & zoom ---------- */
+let drag=null;
+cv.addEventListener('pointerdown', e=>{ if(!IMG) return; cv.setPointerCapture(e.pointerId); drag={x:e.clientX,y:e.clientY,ox:S.ox,oy:S.oy}; });
+cv.addEventListener('pointermove', e=>{
+  if(!drag) return;
+  const r = cv.getBoundingClientRect(), k = cv.width/r.width;
+  S.ox = drag.ox + (e.clientX-drag.x)*k/cv.width;
+  S.oy = drag.oy + (e.clientY-drag.y)*k/cv.height;
+  render(false);
+});
+const endDrag = ()=>{ if(drag){ drag=null; save(); } };
+cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+cv.addEventListener('wheel', e=>{ if(!IMG) return; e.preventDefault(); S.zoom = Math.max(1, Math.min(3, S.zoom - e.deltaY*0.002)); render(); }, {passive:false});
+$('zoom').addEventListener('input', e=>{ S.zoom = +e.target.value; render(); });
+$('btnPos').onclick = ()=>{ S.zoom=1; S.ox=0; S.oy=0; render(); };
+
+/* ---------- Ukuran ---------- */
+PRESETS.forEach(([w,h])=>{
+  const b = document.createElement('button'); b.className='chip'; b.textContent=`${w}×${h}`;
+  b.dataset.w = w*10; b.dataset.h = h*10;
+  b.onclick = ()=>{ S.w=w*10; S.h=h*10; S.ox=0; S.oy=0; render(); };
+  $('presetRow').appendChild(b);
+});
+$('btnSizes').onclick = ()=>{ const o=$('sizes').classList.toggle('open'); $('btnSizes').textContent = o?'Ukuran lain ▴':'Ukuran lain ▾'; };
+$('btnCust').onclick = ()=>{
+  const w=+$('cw').value, h=+$('ch').value;
+  if(!(w>=1&&w<=12&&h>=1&&h<=12)) return toast('Isi lebar & tinggi antara 1–12 cm');
+  S.w=Math.round(w*10); S.h=Math.round(h*10); S.ox=0; S.oy=0; render();
+};
+
+/* ---------- Latar ---------- */
+document.querySelectorAll('#bgRow .chip').forEach(b=>b.onclick=()=>{ S.bg=b.dataset.bg; render(); });
+$('tol').addEventListener('input', e=>{ S.tol=+e.target.value; render(); });
+
+/* ---------- Jumlah, jarak, garis ---------- */
+$('minus').onclick = ()=>{ S.n=Math.max(1,S.n-1); render(); };
+$('plus').onclick  = ()=>{ S.n=Math.min(20,S.n+1); render(); };
+$('gap').addEventListener('input', e=>{ S.gap=+e.target.value; render(); });
+$('guides').onchange = e=>{ S.guides=e.target.checked; render(); };
+
+/* ---------- Unduh PDF ---------- */
+$('btnDl').onclick = ()=>{
+  if(!IMG) return toast('Unggah foto dulu di Langkah 1');
+  if(layout().over) return toast('Foto melebihi kertas A4. Kurangi jumlah atau jarak.');
+  $('modal').classList.add('open'); setTimeout(()=>$('fname').focus(),50);
+};
+$('mCancel').onclick = ()=>$('modal').classList.remove('open');
+$('mOk').onclick = ()=>{
+  const name = $('fname').value.trim().replace(/[\\/:*?"<>|]+/g,'-');
+  if(!name) return toast('Nama file belum diisi');
+  try{
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF({unit:'mm', format:'a4'});
+    const url = cv.toDataURL('image/jpeg', .95);
+    layout().pos.forEach(p=>{
+      doc.addImage(url,'JPEG',p.x,p.y,S.w,S.h);
+      if(S.guides){ doc.setDrawColor(150); doc.setLineWidth(.1); doc.rect(p.x,p.y,S.w,S.h); }
+    });
+    doc.save(name+'.pdf');
+    $('modal').classList.remove('open'); toast('PDF berhasil diunduh ✓');
+  }catch(e){ toast('Gagal membuat PDF. Periksa koneksi internet lalu coba lagi.'); }
+};
+$('fname').addEventListener('keydown', e=>{ if(e.key==='Enter') $('mOk').click(); });
+
+/* ---------- Reset ---------- */
+$('btnReset').onclick = ()=>{
+  if(!confirm('Hapus foto dan semua pengaturan, lalu mulai dari awal?')) return;
+  Object.assign(S, DEF); IMG=null; render();
+};
+
+/* ---------- Init ---------- */
+(async()=>{
+  const s = await dbGet();
+  if(s){ Object.assign(S, s); if(S.img){ try{ IMG = await loadImg(S.img); }catch(e){ IMG=null; } } }
+  render(false);
+})();
+</script>
+</body>
+</html>
