@@ -102,6 +102,8 @@ input[type=number],input[type=text]{font:inherit;padding:11px 12px;border:1.5px 
       </div>
       <div class="stage"><canvas id="crop" width="413" height="531"></canvas></div>
       <label class="f"><b>🔍 Zoom</b><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"></label>
+      <label class="f" style="margin-top:14px"><input type="checkbox" id="tpl" style="width:20px;height:20px"> <span><b style="color:var(--ink)">Layer template</b> (menimpa foto, tidak bisa digeser)</span></label>
+      <p class="hint" id="tplNote" style="margin:0 0 6px"></p>
       <p class="hint" style="margin:12px 0 6px"><b style="color:var(--ink)">Warna latar belakang</b> (opsional, paling bagus untuk latar polos)</p>
       <div class="row" id="bgRow">
         <button class="chip on" data-bg="none">Asli</button>
@@ -154,7 +156,7 @@ input[type=number],input[type=text]{font:inherit;padding:11px 12px;border:1.5px 
 <!-- ============ SECTION 3: JAVASCRIPT ============ -->
 <script>
 const $ = i => document.getElementById(i);
-const DEF = {img:null,w:35,h:45,zoom:1,ox:0,oy:0,n:5,gap:1,guides:true,bg:'none',tol:40};
+const DEF = {img:null,w:35,h:45,zoom:1,ox:0,oy:0,n:5,gap:1,guides:true,bg:'none',tol:40,tpl:false};
 const S = {...DEF};
 let IMG = null, saveT;
 const cv = $('crop'), cx = cv.getContext('2d', {willReadFrequently:true});
@@ -162,6 +164,12 @@ const ac = $('a4'), ax = ac.getContext('2d');
 const BG = {red:[204,31,42], blue:[30,91,191]};
 const PRESETS = [[3.5,4.5],[3,4],[4,3],[2,3],[2.5,3],[3,3],[4,6],[5,5]];
 const A4 = {W:210,H:297,M:10};
+
+/* ---------- Layer template (file templatepasfoto.png di folder yang sama dengan index.html) ---------- */
+const TPL = new Image(); let tplOK = false;
+TPL.onload = () => { tplOK = true; render(false); };
+TPL.onerror = () => { tplOK = false; $('tplNote').textContent = '⚠ File templatepasfoto.png tidak ditemukan. Pastikan satu folder dengan index.html.'; };
+TPL.src = 'templatepasfoto.png';
 
 /* ---------- Penyimpanan (IndexedDB) ---------- */
 const openDB = () => new Promise((res,rej)=>{
@@ -192,6 +200,7 @@ function drawCrop(){
   S.ox = px/W; S.oy = py/H;
   cx.drawImage(IMG, (W-dw)/2+px, (H-dh)/2+py, dw, dh);
   if(S.bg!=='none') swapBg(W,H);
+  if(S.tpl && tplOK && S.w===35 && S.h===45) cx.drawImage(TPL, 0, 0, W, H); // layer teratas, terkunci
 }
 function swapBg(W,H){
   const d = cx.getImageData(0,0,W,H), p = d.data;
@@ -242,6 +251,8 @@ function syncUI(){
   $('zoom').value = S.zoom; $('tol').value = S.tol;
   $('nOut').textContent = S.n; $('gap').value = S.gap; $('gapOut').textContent = S.gap+' mm';
   $('guides').checked = S.guides;
+  $('tpl').checked = S.tpl;
+  if(tplOK || !TPL.complete) $('tplNote').textContent = (S.tpl && !(S.w===35 && S.h===45)) ? 'ℹ Layer template hanya tampil pada ukuran 3.5 × 4.5 cm.' : '';
   $('tolRow').style.display = S.bg==='none' ? 'none' : 'flex';
   document.querySelectorAll('#bgRow .chip').forEach(b=>b.classList.toggle('on', b.dataset.bg===S.bg));
   document.querySelectorAll('#presetRow .chip').forEach(b=>b.classList.toggle('on', +b.dataset.w===S.w && +b.dataset.h===S.h));
@@ -295,6 +306,10 @@ $('btnCust').onclick = ()=>{
 
 /* ---------- Latar ---------- */
 document.querySelectorAll('#bgRow .chip').forEach(b=>b.onclick=()=>{ S.bg=b.dataset.bg; render(); });
+$('tpl').onchange = e=>{
+  if(e.target.checked && !tplOK){ e.target.checked=false; return toast('Template belum termuat. Cek file templatepasfoto.png di GitHub.'); }
+  S.tpl = e.target.checked; render();
+};
 $('tol').addEventListener('input', e=>{ S.tol=+e.target.value; render(); });
 
 /* ---------- Jumlah, jarak, garis ---------- */
