@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pas Foto ke A4 – Cetak Mudah</title>
+<title>Pas Foto Visa</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <!-- ============ SECTION 1: STYLE ============ -->
 <style>
@@ -67,7 +67,7 @@ input[type=number],input[type=text]{font:inherit;padding:11px 12px;border:1.5px 
 <!-- ============ SECTION 2: HTML ============ -->
 <header>
   <div>
-    <h1>📸 Pas Foto ke A4</h1>
+    <h1>Edit Pas Foto Visa</h1>
     <p>Ikuti 4 langkah berikut. Hasilnya berupa PDF siap cetak.</p>
   </div>
   <div class="badge" id="saved">✓ Tersimpan otomatis</div>
@@ -109,6 +109,7 @@ input[type=number],input[type=text]{font:inherit;padding:11px 12px;border:1.5px 
         <button class="chip on" data-bg="none">Asli</button>
         <button class="chip" data-bg="red">🟥 Merah</button>
         <button class="chip" data-bg="blue">🟦 Biru</button>
+        <button class="chip" data-bg="white">⬜ Putih</button>
       </div>
       <label class="f" id="tolRow" style="display:none"><b>Kepekaan</b><input type="range" id="tol" min="10" max="90" value="40"></label>
       <button class="link" id="btnPos">↺ Kembalikan posisi &amp; zoom</button>
@@ -124,6 +125,15 @@ input[type=number],input[type=text]{font:inherit;padding:11px 12px;border:1.5px 
       </div>
       <label class="f"><b>Jarak</b><input type="range" id="gap" min="0" max="10" step="0.5" value="1"><span id="gapOut" style="min-width:50px">1 mm</span></label>
       <label class="f"><input type="checkbox" id="guides" checked style="width:20px;height:20px"> Tampilkan garis panduan potong</label>
+      <label class="f"><input type="checkbox" id="bd" style="width:20px;height:20px"> <span><b style="color:var(--ink)">Border foto</b> (bingkai tiap foto)</span></label>
+      <div id="bdBox" style="display:none;background:#f8faff;border-radius:12px;padding:6px 12px 10px">
+        <label class="f"><b>Tebal</b><input type="range" id="bw" min="0.1" max="3" step="0.1" value="0.5"><span id="bwOut" style="min-width:50px">0.5 mm</span></label>
+        <label class="f"><b>Warna</b><input type="color" id="bc" value="#000000" style="width:56px;height:36px;border:1.5px solid var(--line);border-radius:8px;padding:2px;background:#fff"></label>
+        <div class="row" id="bpRow"><b style="font-size:14px;min-width:64px">Posisi</b>
+          <button class="chip on" data-bp="in">Di dalam foto</button>
+          <button class="chip" data-bp="out">Di luar foto</button>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -156,12 +166,13 @@ input[type=number],input[type=text]{font:inherit;padding:11px 12px;border:1.5px 
 <!-- ============ SECTION 3: JAVASCRIPT ============ -->
 <script>
 const $ = i => document.getElementById(i);
-const DEF = {img:null,w:35,h:45,zoom:1,ox:0,oy:0,n:5,gap:1,guides:true,bg:'none',tol:40,tpl:false};
+const DEF = {img:null,w:35,h:45,zoom:1,ox:0,oy:0,n:5,gap:1,guides:true,bg:'none',tol:40,tpl:false,bd:false,bw:0.5,bc:'#000000',bp:'in'};
 const S = {...DEF};
 let IMG = null, saveT;
 const cv = $('crop'), cx = cv.getContext('2d', {willReadFrequently:true});
 const ac = $('a4'), ax = ac.getContext('2d');
-const BG = {red:[204,31,42], blue:[30,91,191]};
+const BG = {red:[204,31,42], blue:[30,91,191], white:[255,255,255]};
+const hex2rgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
 const PRESETS = [[3.5,4.5],[3,4],[4,3],[2,3],[2.5,3],[3,3],[4,6],[5,5]];
 const A4 = {W:210,H:297,M:10};
 
@@ -220,7 +231,8 @@ function swapBg(W,H){
 
 /* ---------- Layout A4 ---------- */
 function layout(){
-  const {W,H,M} = A4, w=S.w, h=S.h, g=S.gap;
+  const {W,H,M} = A4, g=S.gap, bo = (S.bd && S.bp==='out') ? S.bw : 0;
+  const w = S.w+2*bo, h = S.h+2*bo;   // sel = foto + border luar
   const per = Math.max(1, Math.floor((W-2*M+g)/(w+g)));
   const pos = [];
   for(let i=0;i<S.n;i++){
@@ -229,19 +241,20 @@ function layout(){
     pos.push({x:(W-rowW)/2+c*(w+g), y:M+r*(h+g)});
   }
   const over = pos.some(p=>p.y+h > H-M+.01) || w > W-2*M;
-  return {pos, per, over};
+  return {pos, per, over, bo, cw:w, ch:h};
 }
 function drawA4(){
   const k = ac.width/A4.W, L = layout();
   ax.fillStyle='#fff'; ax.fillRect(0,0,ac.width,ac.height);
   L.pos.forEach(p=>{
-    ax.drawImage(cv, p.x*k, p.y*k, S.w*k, S.h*k);
-    if(S.guides){ ax.strokeStyle='#8f9bb8'; ax.lineWidth=.6; ax.strokeRect(p.x*k, p.y*k, S.w*k, S.h*k); }
+    ax.drawImage(cv, (p.x+L.bo)*k, (p.y+L.bo)*k, S.w*k, S.h*k);
+    if(S.bd){ ax.strokeStyle=S.bc; ax.lineWidth=S.bw*k; ax.strokeRect((p.x+S.bw/2)*k, (p.y+S.bw/2)*k, (L.cw-S.bw)*k, (L.ch-S.bw)*k); }
+    if(S.guides){ ax.strokeStyle='#8f9bb8'; ax.lineWidth=.6; ax.strokeRect(p.x*k, p.y*k, L.cw*k, L.ch*k); }
   });
   const info = $('info');
   info.className = L.over ? 'warn' : '';
   info.textContent = L.over
-    ? '⚠ Sebagian foto keluar dari kertas A4. Kurangi jumlah atau jarak.'
+    ? '⚠ Sebagian foto keluar dari kertas A4. Kurangi jumlah, jarak, atau tebal border.'
     : `${S.n} foto • ${cm(S.w)} × ${cm(S.h)} cm • ${L.per} foto per baris • jarak ${S.gap} mm`;
 }
 
@@ -252,6 +265,9 @@ function syncUI(){
   $('nOut').textContent = S.n; $('gap').value = S.gap; $('gapOut').textContent = S.gap+' mm';
   $('guides').checked = S.guides;
   $('tpl').checked = S.tpl;
+  $('bd').checked = S.bd; $('bdBox').style.display = S.bd ? 'block' : 'none';
+  $('bw').value = S.bw; $('bwOut').textContent = S.bw+' mm'; $('bc').value = S.bc;
+  document.querySelectorAll('#bpRow .chip').forEach(b=>b.classList.toggle('on', b.dataset.bp===S.bp));
   if(tplOK || !TPL.complete) $('tplNote').textContent = (S.tpl && !(S.w===35 && S.h===45)) ? 'ℹ Layer template hanya tampil pada ukuran 3.5 × 4.5 cm.' : '';
   $('tolRow').style.display = S.bg==='none' ? 'none' : 'flex';
   document.querySelectorAll('#bgRow .chip').forEach(b=>b.classList.toggle('on', b.dataset.bg===S.bg));
@@ -317,6 +333,10 @@ $('minus').onclick = ()=>{ S.n=Math.max(1,S.n-1); render(); };
 $('plus').onclick  = ()=>{ S.n=Math.min(20,S.n+1); render(); };
 $('gap').addEventListener('input', e=>{ S.gap=+e.target.value; render(); });
 $('guides').onchange = e=>{ S.guides=e.target.checked; render(); };
+$('bd').onchange = e=>{ S.bd=e.target.checked; render(); };
+$('bw').addEventListener('input', e=>{ S.bw=+e.target.value; render(); });
+$('bc').addEventListener('input', e=>{ S.bc=e.target.value; render(); });
+document.querySelectorAll('#bpRow .chip').forEach(b=>b.onclick=()=>{ S.bp=b.dataset.bp; render(); });
 
 /* ---------- Unduh PDF ---------- */
 $('btnDl').onclick = ()=>{
@@ -332,9 +352,11 @@ $('mOk').onclick = ()=>{
     const {jsPDF} = window.jspdf;
     const doc = new jsPDF({unit:'mm', format:'a4'});
     const url = cv.toDataURL('image/jpeg', .95);
-    layout().pos.forEach(p=>{
-      doc.addImage(url,'JPEG',p.x,p.y,S.w,S.h);
-      if(S.guides){ doc.setDrawColor(150); doc.setLineWidth(.1); doc.rect(p.x,p.y,S.w,S.h); }
+    const L = layout();
+    L.pos.forEach(p=>{
+      doc.addImage(url,'JPEG',p.x+L.bo,p.y+L.bo,S.w,S.h);
+      if(S.bd){ doc.setDrawColor(...hex2rgb(S.bc)); doc.setLineWidth(S.bw); doc.rect(p.x+S.bw/2, p.y+S.bw/2, L.cw-S.bw, L.ch-S.bw, 'S'); }
+      if(S.guides){ doc.setDrawColor(150); doc.setLineWidth(.1); doc.rect(p.x,p.y,L.cw,L.ch); }
     });
     doc.save(name+'.pdf');
     $('modal').classList.remove('open'); toast('PDF berhasil diunduh ✓');
